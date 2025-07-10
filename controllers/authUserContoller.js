@@ -65,39 +65,66 @@ export const signup = async (req, res) => {
 
 // Login Controller
 export const login = async (req, res) => {
-    try {
-        const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-        const user = await userModel.findOne({
-             $or: [
-                    { email: username },
-                    { phone: isNaN(username) ? null : Number(username) } // safely parse phone numbers
-                ]
-         });
-
-        if (!user || !user.isActive)
-            return res.status(400).json({ msg: "Invalid username or account disabled" });
-
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) return res.status(401).json({ msg: "Invalid credentials" });
-
-        user.lastLogin = new Date();
-        await user.save();
-
-        const token = generateToken(user);
-
-        res.status(200).json({
-            message: "Login successful",
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                username: user.username,
-                role: user.role,
-                lastLogin: user.lastLogin
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ msg: "Server error", error: err.message });
+    let query = {};
+    if (!isNaN(username)) {
+      query = { phone: username };
+    } else {
+      query = { email: username.toLowerCase() };
     }
+
+    const user = await userModel.findOne(query);
+
+    if (!user || !user.isActive)
+      return res.status(400).json({ msg: "Invalid username or account disabled" });
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(401).json({ msg: "Invalid credentials" });
+
+    user.lastLogin = new Date();
+
+    user.loginHistory.push({
+      loginAt: user.lastLogin,
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    await user.save();
+
+    const token = generateToken(user);
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        role: user.role,
+        lastLogin: user.lastLogin
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
 };
+
+
+
+
+// export const getUserLoginHistory = async (req, res) => {
+//   try {
+//     const users = await userModel.find({}, {
+//       name: 1,
+//       email: 1,
+//       role: 1,
+//       loginHistory: 1
+//     }).sort({ name: 1 });
+
+//     res.status(200).json({ users });
+//   } catch (error) {
+//     res.status(500).json({ message: "Error fetching login history", error: error.message });
+//   }
+// };
+
