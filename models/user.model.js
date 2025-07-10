@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['superadmin', 'admin', 'sales'],
+    enum: ['admin', 'user'],
     default: 'admin'
   },
   isActive: {
@@ -29,7 +29,13 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
-  }
+    // type: Date, default: Date.now 
+  },
+  loginHistory: [{
+    loginAt: { type: Date, default: Date.now },
+    ip: String,
+    userAgent: String
+  }]
 }, { timestamps: true });
 
 // Hash password before saving

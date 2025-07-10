@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 console.log("JWT_SECRET", JWT_SECRET);
 
 
-const Authenticate = (req, res, next) => {
+export const Authenticate = (req, res, next) => {
 
     const authHeader = req.headers.authorization;
 
@@ -47,4 +47,11 @@ const Authenticate = (req, res, next) => {
     }
 }
 
-export default Authenticate;
+
+export const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role))
+      return res.status(403).json({ msg: "Access denied" });
+    next();
+  };
+};
