@@ -3,12 +3,17 @@ import userModel from "../models/user.model.js";
 
 // Generate JWT
 const generateToken = (user) => {
-    return jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-    );
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+      name: user.name  // include name here
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 };
+
 
 // Signup Controller
 export const signup = async (req, res) => {
@@ -111,20 +116,48 @@ export const login = async (req, res) => {
 };
 
 
+// Update user
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params; // user ID to update
+    const { name, email, phone, role, isActive } = req.body;
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      id,
+      { name, email, phone, role, isActive },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating user", error: error.message });
+  }
+};
 
 
-// export const getUserLoginHistory = async (req, res) => {
-//   try {
-//     const users = await userModel.find({}, {
-//       name: 1,
-//       email: 1,
-//       role: 1,
-//       loginHistory: 1
-//     }).sort({ name: 1 });
+// Delete user
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-//     res.status(200).json({ users });
-//   } catch (error) {
-//     res.status(500).json({ message: "Error fetching login history", error: error.message });
-//   }
-// };
+    const deletedUser = await userModel.findByIdAndDelete(id);
 
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User deleted successfully",
+      user: deletedUser
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting user", error: error.message });
+  }
+};

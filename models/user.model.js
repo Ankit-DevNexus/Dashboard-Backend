@@ -28,8 +28,8 @@ const userSchema = new mongoose.Schema({
     default: true
   },
   lastLogin: {
-    type: Date
-    // type: Date, default: Date.now 
+    type: Date,
+    default: Date.now
   },
   loginHistory: [{
     loginAt: { type: Date, default: Date.now },
