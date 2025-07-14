@@ -1,9 +1,16 @@
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 import xlsx from "xlsx";
 import LeadsModel from "../models/LeadModel.js";
 // import LeadsModelByExcel from "../models/LeadsModelByExcel.js";
 
 // const JWT_SECRET = process.env.JWT_SECRET;
 
+
+// create leads manually
 export const createLead = async (req, res) => {
     try {
         // Step 1: Extract and verify JWT
@@ -50,7 +57,8 @@ export const createLead = async (req, res) => {
             status,
             remarks1,
             remarks2,
-            createdBy: req.user._id,
+            createdById: req.user.id,
+            createdBy: req.user.name,
             ...extraFields // This flattens dynamic fields as top-level fields
         });
 
@@ -63,6 +71,7 @@ export const createLead = async (req, res) => {
 };
 
 
+// create leads via .csv and excel
 export const uploadLeadsFromExcel = async (req, res) => {
   try {
     if (!req.file) {
@@ -77,7 +86,7 @@ export const uploadLeadsFromExcel = async (req, res) => {
 
     const leads = rows.map(row => ({
       ...row,
-      createdBy: req.user?._id || "system"
+      createdBy: req.user?.name || "system"
     }));
 
     const savedLeads = await LeadsModel.insertMany(leads);
@@ -90,7 +99,7 @@ export const uploadLeadsFromExcel = async (req, res) => {
 };
 
 
-
+// get all leads from created leads 
 export const getAllLeads = async (req, res) => {
   try {
     const leads = await LeadsModel.find()
@@ -101,3 +110,31 @@ export const getAllLeads = async (req, res) => {
     return res.status(500).json({ message: "Error fetching leads", error: error.message });
   }
 };
+
+
+// get leads from meta APIs
+
+const AD_ACCOUNT_ID = process.env.AD_ACCOUNT_ID;
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+
+
+export const getLeadsFromMetaAPI = async (req, res) => {
+   const url = `https://graph.facebook.com/v19.0/${AD_ACCOUNT_ID}/insights?fields=campaign_name,clicks,impressions,spend&access_token=${ACCESS_TOKEN}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching Meta Ads data:', error.message);
+    res.status(500).json({ error: 'Failed to fetch Meta Ads data' });
+  }
+}
+
+
+// https://graph.facebook.com/v23.0/1381264666476332/events?access_token=EAA5ZCj82CAQUBPCnywNiBdIy9ULbBeNBOEKZACB8k1bCEU6Pk8fORRZCjn8utxUMNIXdRyyLjfudnMlXY0zmigSVXZCAtfZARU4YA6vVNFKd5q9wZBdPZBdbKO3GRglMHrrFzt5akZAklkhujFiQKG2ZBZACxrZCudrnD8D3IkQqIBeDsMsOmHX4kVhhIiR4MbZAZBAZDZD
